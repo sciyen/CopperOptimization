@@ -1,0 +1,15 @@
+# Test data
+Testcase_txt
+
+# Output file
+main
+*.o
+
+# vim
+*.swp
+*.swa
+
+# vscode
+.vscode
+
+desktop.ini
