@@ -46,14 +46,16 @@ void GeometryArc::add_feature(const string &s)
     float buf[8];
     int num = parse(s, buf);
     int offset = 0;
-    if (num == 7)
+    ax1 = buf[0];
+    ay1 = buf[1];
+    ax2 = buf[2];
+    ay2 = buf[3];
+    cx = buf[4];
+    cy = buf[5];
+    if (num == 7) {
+        r = buf[6];
         offset = 1;
-    ax1 = buf[offset + 0];
-    ay1 = buf[offset + 1];
-    ax2 = buf[offset + 2];
-    ay2 = buf[offset + 3];
-    cx = buf[offset + 4];
-    cy = buf[offset + 5];
+    }
     dir = (buf[offset + 6] > 0) ? true : false;
     cout << "Arc: " << ax1 << ',' << ay1 << ',' << ax2 << ',' << ay2 << ','
          << cx << ',' << cy << ',' << (dir ? "CW" : "CCW") << endl;

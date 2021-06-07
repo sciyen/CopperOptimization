@@ -21,7 +21,7 @@ class GeometryLine : public Geometry
 {
 private:
 public:
-    float x1, y1, x2, y2;
+    float x1, y1, x2, y2, r;
     GeometryLine(const string &s);
     void add_feature(const string &s);
 };
