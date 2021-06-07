@@ -21,7 +21,7 @@ class GeometryLine : public Geometry
 {
 private:
 public:
-    float x1, y1, x2, y2, r;
+    float x1, y1, x2, y2;
     GeometryLine(const string &s);
     void add_feature(const string &s);
 };
@@ -30,8 +30,8 @@ class GeometryArc : public Geometry
 {
 private:
 public:
-    float ax1, ay1, ax2, ay2, cx, cy;
-    bool dir;  // true for cw, false for ccw
+    float ax1, ay1, ax2, ay2, cx, cy, r;
+    bool dir; // true for cw, false for ccw
     GeometryArc(const string &s);
     void add_feature(const string &s);
 };

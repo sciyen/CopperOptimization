@@ -1,6 +1,9 @@
 # Test data
 Testcase_txt
 
+# Submodules
+submodule/*
+
 # Output file
 main
 *.o
@@ -11,5 +14,8 @@ main
 
 # vscode
 .vscode
+
+# cmake
+build
 
 desktop.ini
