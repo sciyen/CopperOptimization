@@ -17,13 +17,13 @@ struct DataConfig {
 class Load
 {
 private:
-    DataConfig config;
     string filename;
 
     /* Parse the file */
     void read();
 
 public:
+    DataConfig config;
     string node_type;
     vector<Node> nodes;
 

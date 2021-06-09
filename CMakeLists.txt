@@ -7,7 +7,7 @@ project( CopperOptimization VERSION 0.0)
 
 
 # CGAL and its components
-find_package( CGAL QUIET COMPONENTS  )
+find_package( CGAL QUIET COMPONENTS Cores )
 
 if ( NOT CGAL_FOUND )
 
@@ -36,7 +36,15 @@ list(APPEND EXTRA_INCLUDES "${PROJECT_SOURCE_DIR}/libs/Geometry")
 add_subdirectory(libs/FileProcessing)
 list(APPEND EXTRA_LIBS FileProcessing)
 list(APPEND EXTRA_INCLUDES "${PROJECT_SOURCE_DIR}/libs/FileProcessing")
+
 # include for local package
+
+# Boost
+#set(Boost_USE_STATIC_LIBS OFF) 
+#set(Boost_USE_MULTITHREADED ON)  
+#set(Boost_USE_STATIC_RUNTIME OFF) 
+#find_package(Boost REQUIRED COMPONENTS) 
+#include_directories(${Boost_INCLUDE_DIRS})
 
 
 # Creating entries for target: CopperOptimization
@@ -49,6 +57,8 @@ add_executable( CopperOptimization ./src/main.cpp)
 # Link the executable to CGAL and third-party libraries
 target_link_libraries(CopperOptimization PRIVATE CGAL::CGAL )
 target_link_libraries(CopperOptimization PUBLIC ${EXTRA_LIBS})
+
+#target_link_libraries(CopperOptimization ${Boost_LIBRARIES})
 
 target_include_directories(CopperOptimization PUBLIC
                            "${PROJECT_BINARY_DIR}"
