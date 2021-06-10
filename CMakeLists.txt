@@ -28,6 +28,16 @@ if ( NOT Boost_FOUND )
 
 endif()
 
+
+# OpenCV
+find_package( OpenCV REQUIRED )
+if ( NOT OpenCV_FOUND )
+  message(STATUS "This project requires the opencv library, and will not be compiled.")
+
+  return()  
+
+endif()
+
 # include for local directory
 add_subdirectory(libs/Geometry)
 list(APPEND EXTRA_LIBS Geometry)
@@ -37,6 +47,10 @@ add_subdirectory(libs/FileProcessing)
 list(APPEND EXTRA_LIBS FileProcessing)
 list(APPEND EXTRA_INCLUDES "${PROJECT_SOURCE_DIR}/libs/FileProcessing")
 
+add_subdirectory(libs/Visualization)
+list(APPEND EXTRA_LIBS Visualization)
+list(APPEND EXTRA_INCLUDES "${PROJECT_SOURCE_DIR}/libs/Visualization")
+
 # include for local package
 
 # Boost
@@ -45,6 +59,10 @@ list(APPEND EXTRA_INCLUDES "${PROJECT_SOURCE_DIR}/libs/FileProcessing")
 #set(Boost_USE_STATIC_RUNTIME OFF) 
 #find_package(Boost REQUIRED COMPONENTS) 
 #include_directories(${Boost_INCLUDE_DIRS})
+
+
+# OpenCV
+include_directories( ${OpenCV_INCLUDE_DIRS} )
 
 
 # Creating entries for target: CopperOptimization
@@ -59,6 +77,7 @@ target_link_libraries(CopperOptimization PRIVATE CGAL::CGAL )
 target_link_libraries(CopperOptimization PUBLIC ${EXTRA_LIBS})
 
 #target_link_libraries(CopperOptimization ${Boost_LIBRARIES})
+target_link_libraries( CopperOptimization PUBLIC ${OpenCV_LIBS} )
 
 target_include_directories(CopperOptimization PUBLIC
                            "${PROJECT_BINARY_DIR}"

@@ -6,29 +6,33 @@
 #include <string>
 #include <vector>
 #include "geometry.h"
-using namespace std;
 
-struct DataConfig {
-    float mingap;
-    float minwidth;
-    float geometry;
+struct DataConfig
+{
+    double mingap;
+    double minwidth;
+    double geometry;
 };
 
 class Load
 {
 private:
-    string filename;
+    std::string filename;
 
     /* Parse the file */
     void read();
 
 public:
+    CGAL::Bbox_2 bbox;
     DataConfig config;
-    string node_type;
-    vector<Node> nodes;
+    std::string node_type;
+    std::vector<Node> nodes;
 
     /* Load from txt file */
-    Load(string fname);
+    Load(std::string fname);
+
+    /* Calculate maximal bbox */
+    Bbox_2 get_bbox();
 };
 
 #endif

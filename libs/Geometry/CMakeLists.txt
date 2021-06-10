@@ -28,16 +28,26 @@ if ( NOT Boost_FOUND )
 
 endif()
 
+
+# OpenCV
+find_package( OpenCV REQUIRED )
+if ( NOT OpenCV_FOUND )
+  message(STATUS "This project requires the opencv library, and will not be compiled.")
+
+  return()  
+
+endif()
+
+
 # include for local directory
 add_library( Geometry geometry.cpp)
+
+include_directories( ${OpenCV_INCLUDE_DIRS} )
 
 # include for local package
 
 target_link_libraries(Geometry CGAL::CGAL)
 
 # Creating entries for all C++ files with "main" routine
+target_link_libraries( Geometry ${OpenCV_LIBS} )
 # ##########################################################
-
-
-
-

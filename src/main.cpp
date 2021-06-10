@@ -7,23 +7,26 @@
 #include <boost/graph/graph_traits.hpp>
 
 #include <iostream>
+#include <opencv2/opencv.hpp>
 #include "geometry.h"
 #include "load.h"
+#include "visualization.h"
 using namespace std;
 using namespace boost;
 
-typedef property<edge_weight_t, float> Weight;
+typedef property<edge_weight_t, double> Weight;
 typedef adjacency_list<vecS, vecS, undirectedS, no_property, Weight>
     UndirectedGraph;
 
 int main()
 {
-    Load data = Load("../Testcase_txt/ProblemA.txt");
+    Load data = Load("../Testcase_txt/ProblemB.txt");
     for (auto node = data.nodes.begin(); node < data.nodes.end(); node++) {
         node->get_bbox();
         node->print_bbox();
     }
 
+    /* Graph construction */
     UndirectedGraph undigraph(data.nodes.size());
 
     typename graph_traits<UndirectedGraph>::vertex_descriptor a, b;
@@ -44,5 +47,9 @@ int main()
             }
         }
     }
+
+    data.get_bbox();
+    Visualization fig = Visualization(data, "pad");
+    fig.show(data);
     return 0;
 }

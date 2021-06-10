@@ -1,6 +1,6 @@
 #include "load.h"
 
-Load::Load(string fname)
+Load::Load(std::string fname)
 {
     filename = fname;
     read();
@@ -8,16 +8,16 @@ Load::Load(string fname)
 
 void Load::read()
 {
-    cout << "Reading " << filename << endl;
-    ifstream infile(filename);
+    std::cout << "Reading " << filename << std::endl;
+    std::ifstream infile(filename);
 
-    string line;
-    string node_type;
-    vector<string> geo_buf;
+    std::string line;
+    std::string node_type;
+    std::vector<std::string> geo_buf;
     while (getline(infile, line)) {
         size_t pos = 0;
-        string s;
-        if ((pos = line.find(',')) == string::npos) {
+        std::string s;
+        if ((pos = line.find(',')) == std::string::npos) {
             // drill, pth, smd
 
             // deal with previous geo parameters
@@ -29,19 +29,20 @@ void Load::read()
             // new geo type
             node_type = line;
         } else {
-            string token = line.substr(0, pos);
+            std::string token = line.substr(0, pos);
 
             // deal with header
             size_t sec_pos = pos;
-            if ((sec_pos = line.find(',', pos)) == string::npos) {
-                float value = stof(line.substr(pos + 1));
+            if ((sec_pos = line.find(',', pos + 1)) == std::string::npos) {
+                double value = stof(line.substr(pos + 1));
                 if (token == "mingap")
                     config.mingap = value;
                 else if (token == "minwidth")
                     config.minwidth = value;
                 else if (token == "geometry")
                     config.geometry = value;
-                cout << "settings: " << token << ", " << value << endl;
+                std::cout << "settings: " << token << ", " << value
+                          << std::endl;
             }
 
             // deal with parameters of a geometric
@@ -53,4 +54,13 @@ void Load::read()
 
     // the last geo
     nodes.push_back(Node(node_type, geo_buf));
+}
+
+Bbox_2 Load::get_bbox()
+{
+    bbox = CGAL::Bbox_2();
+    for (auto node = nodes.begin(); node < nodes.end(); node++) {
+        bbox += node->get_bbox();
+    }
+    return bbox;
 }
