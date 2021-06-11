@@ -14,7 +14,8 @@ Visualization::Visualization(const Load &data, std::string _name, double _scale)
     config.t_w = width * scale;
     config.t_h = height * scale;
     config.scale = scale;
-    img = cv::Mat::zeros(config.t_w, config.t_h, CV_8UC3);
+    img = cv::Mat::zeros(cv::Size(config.t_w, config.t_h), CV_8UC3);
+    std::cout << "size: " << config.t_w << ',' << config.t_h << std::endl;
 }
 
 void Visualization::show(const Load &data)

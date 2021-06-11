@@ -21,6 +21,7 @@ typedef Kernel::Vector_2 Vector_2;
 
 // Circular Arc
 typedef CGAL::Exact_circular_kernel_2 Circular_k;
+typedef CGAL::Circle_2<Circular_k> Circular_Circle_2;
 typedef CGAL::Point_2<Circular_k> Circular_Point_2;
 typedef CGAL::Circular_arc_point_2<Circular_k> Circular_Arc_Point_2;
 typedef CGAL::Circular_arc_2<Circular_k> Circular_arc_2;
