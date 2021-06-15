@@ -48,6 +48,10 @@ int main()
         }
     }
 
+    for (auto vi = data.nodes.begin(); vi < data.nodes.end(); vi++) {
+        vi->dilate(data.config.mingap / 2);
+    }
+
     data.get_bbox();
     Visualization fig = Visualization(data, "pad");
     fig.show(data);

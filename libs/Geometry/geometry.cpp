@@ -60,6 +60,24 @@ Bbox_2 GeometryLine::get_bbox()
     return seg.bbox();
 }
 
+void GeometryLine::dilate(Point_2 center, double dis)
+{
+    Vector_2 v =
+        Vector_2(seg.target(), seg.source()).perpendicular(CGAL::LEFT_TURN);
+    Vector_2 w = Vector_2(center, seg.source());
+    double inner = v.hx() * w.hx() + v.hy() * w.hy();
+    double len = sqrt(pow(CGAL::to_double(v.x()), 2) + pow(CGAL::to_double(v.y()), 2));
+    if (inner < 0)
+        len *= -1;
+    v = v * dis / len;
+    Transformation translate(CGAL::TRANSLATION, v);
+    seg = Segment_2(translate(seg.source()), translate(seg.target()));
+}
+
+void GeometryLine::move(Vector_2 v){
+
+}
+
 void GeometryLine::draw(cv::Mat img,
                         const DrawConfig &dc,
                         const cv::Scalar color,
@@ -132,6 +150,32 @@ Bbox_2 GeometryArc::get_bbox()
         return arc.bbox();
 }
 
+void GeometryArc::dilate(Point_2 center, double dis){
+    if (is_circle){
+        circle = Circle_2(circle.center(), circle.squared_radius() + dis);
+    } else {
+        Circular_Circle_2 ccircle =
+            Circular_Circle_2(arc.center(), arc.squared_radius() + dis);
+
+        double dx = CGAL::to_double(arc.source().x() - arc.center().x());
+        double dy = CGAL::to_double(arc.source().y() - arc.center().y());
+        double dl = sqrt(pow(dx, 2) + pow(dy, 2));
+        Circular_Arc_Point_2 acp = Circular_Arc_Point_2(
+            Circular_Point_2(
+                CGAL::to_double(arc.source().x()) + dx * dis / dl,
+                CGAL::to_double(arc.source().y()) + dy * dis / dl) );
+
+        dx = CGAL::to_double(arc.target().x() - arc.center().x());
+        dy = CGAL::to_double(arc.target().y() - arc.center().y());
+        dl = sqrt(pow(dx, 2) + pow(dy, 2));
+        Circular_Arc_Point_2 acq = Circular_Arc_Point_2(
+            Circular_Point_2(
+                CGAL::to_double(arc.target().x()) + dx * dis / dl,
+                CGAL::to_double(arc.target().y()) + dy * dis / dl) );
+        
+        arc = Circular_arc_2(ccircle, acp, acq);
+    }
+}
 void GeometryArc::draw(cv::Mat img,
                        const DrawConfig &dc,
                        const cv::Scalar color,
@@ -197,6 +241,12 @@ Bbox_2 Node::get_bbox()
     return bbox;
 }
 
+void Node::dilate(double dis)
+{
+    for (auto g : geometries) {
+        g->dilate(center, dis);
+    }
+}
 void Node::print_bbox()
 {
     std::cout << bbox.xmin() << ',' << bbox.ymin() << ',' << bbox.xmax() << ','

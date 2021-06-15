@@ -63,6 +63,9 @@ public:
 
     virtual Bbox_2 get_bbox() = 0;
 
+    /* Expand the geometry with the given distance and center. */
+    virtual void dilate(Point_2 center, double dis) = 0;
+
     /* Every children class should implement this function, 
      * which draws its own geometry with opencv functions. */
     virtual void draw(cv::Mat img, const DrawConfig &dc,
@@ -80,7 +83,7 @@ public:
     GeometryLine(const std::string &s);
     virtual void add_feature(const std::string &s);
     virtual Bbox_2 get_bbox();
-    virtual void draw(cv::Mat img, const DrawConfig &dc,
+    virtual void dilate(Point_2 center, double dis);
                       const cv::Scalar color = cv::Scalar(255, 0, 0),
                       const int thickness = 2,
                       const int lineType = cv::LINE_8);
@@ -99,6 +102,7 @@ public:
     GeometryArc(const std::string &s);
     virtual void add_feature(const std::string &s);
     virtual Bbox_2 get_bbox();
+    virtual void dilate(Point_2 center, double dis);
     virtual void draw(cv::Mat img,
                       const DrawConfig &dc,
                       const cv::Scalar color = cv::Scalar(255, 0, 0),
@@ -124,6 +128,7 @@ public:
     Node(const std::string &node_type, const std::vector<std::string> &geos_str);
     ~Node();
     Bbox_2 get_bbox();
+    void dilate(double dis);
     void print_bbox();
 
     /* Check if a collision occurred with the given node. */
