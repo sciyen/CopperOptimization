@@ -1,6 +1,9 @@
 #include "geometry.h"
 
-Geometry::Geometry() {}
+Geometry::Geometry()
+{
+    geo_type = GEO_UNKNOWN;
+}
 
 Bbox_2 Geometry::get_bbox()
 {
@@ -30,8 +33,8 @@ void Geometry::translate(double &ox,
                          const Point_2 p,
                          const DrawConfig &dc)
 {
-    ox = (p.x() - dc.s_xmin) * dc.t_w / dc.s_w;
-    oy = (p.y() - dc.s_ymin) * dc.t_h / dc.s_h;
+    ox = CGAL::to_double(p.x() - dc.s_xmin) * dc.t_w / dc.s_w;
+    oy = CGAL::to_double(p.y() - dc.s_ymin) * dc.t_h / dc.s_h;
 }
 
 GeometryLine::GeometryLine(const std::string &geo) : Geometry()
@@ -53,6 +56,7 @@ void GeometryLine::add_feature(const std::string &s)
               << std::endl;
 
     seg = Segment_2(Point_2(x1, y1), Point_2(x2, y2));
+    geo_type = GEO_LINE;
 }
 
 Bbox_2 GeometryLine::get_bbox()
@@ -65,8 +69,9 @@ void GeometryLine::dilate(Point_2 center, double dis)
     Vector_2 v =
         Vector_2(seg.target(), seg.source()).perpendicular(CGAL::LEFT_TURN);
     Vector_2 w = Vector_2(center, seg.source());
-    double inner = v.hx() * w.hx() + v.hy() * w.hy();
-    double len = sqrt(pow(CGAL::to_double(v.x()), 2) + pow(CGAL::to_double(v.y()), 2));
+    double inner = CGAL::to_double(v.hx() * w.hx() + v.hy() * w.hy());
+    double len =
+        sqrt(pow(CGAL::to_double(v.x()), 2) + pow(CGAL::to_double(v.y()), 2));
     if (inner < 0)
         len *= -1;
     v = v * dis / len;
@@ -74,9 +79,56 @@ void GeometryLine::dilate(Point_2 center, double dis)
     seg = Segment_2(translate(seg.source()), translate(seg.target()));
 }
 
-void GeometryLine::move(Vector_2 v){
+void GeometryLine::check_collision(Geometry &g, std::vector<Point_2> &res)
+{
+    if (g.geo_type == GEO_LINE) {
+        // two line
+        Point_2 test_pt;
+        Segment_2 test_seg;
+        CGAL::Object obj =
+            CGAL::intersection(seg, dynamic_cast<GeometryLine *>(&g)->seg);
+        if (CGAL::assign(test_pt, obj)) {
+            // the result is a point
+            res.push_back(test_pt);
+        } else if (CGAL::assign(test_seg, obj)) {
+            // the result is a segment
+            res.push_back(test_seg.source());
+            res.push_back(test_seg.target());
+        }
+    } else {
+        Line_2 l = Line_2(seg);
+        Circle_2 c;
+        if (g.geo_type == GEO_CIRCLE) {
+            c = Circle_2(dynamic_cast<GeometryArc *>(&g)->circle);
+        } else if (g.geo_type == GEO_ARC) {
+            Circular_Circle_2 ccircle = dynamic_cast<GeometryArc *>(&g)->arc.supporting_circle();
+            c = Circle_2(
+                Point_2(ccircle.center().x(), ccircle.center().y()), 
+                CGAL::to_double(ccircle.squared_radius()));
+        }
 
+
+        typedef CGAL::cpp11::result_of<Kernel::Intersect_2(Line_2, Circle_2)>::type
+            IntersectOut;
+        std::vector<IntersectOut> output;
+        typedef CGAL::Dispatch_output_iterator < CGAL::cpp11::tuple<IntersectOut>, CGAL::cpp0x::tuple<std::back_insert_iterator<std::vector<IntersectOut>>>> Dispatcher;
+
+        Dispatcher disp = CGAL::dispatch_output<IntersectOut>(std::back_inserter(output));
+        CGAL::intersection(l, c, disp);
+
+        if (output.size() > 0)
+        {
+            std::cout << CGAL::to_double(output[0].first.x()) << ", " << CGAL::to_double(output[0].first.y()) << std::endl;
+            std::cout << output[0].second << std::endl;
+            if (output.size() > 1)
+            {
+                std::cout << CGAL::to_double(output[1].first.x()) << ", " << CGAL::to_double(output[1].first.y()) << std::endl;
+            }
+        }
+    }
 }
+
+void GeometryLine::move(Vector_2 v) {}
 
 void GeometryLine::draw(cv::Mat img,
                         const DrawConfig &dc,
@@ -122,10 +174,11 @@ void GeometryArc::add_feature(const std::string &s)
     std::cout << "Arc: " << ax1 << ',' << ay1 << ',' << ax2 << ',' << ay2 << ','
               << cx << ',' << cy << ',' << (dir ? "CW" : "CCW") << std::endl;
 
-    if (is_circle)
+    if (is_circle) {
         // center, radius, orientation=COUNTERCLOCKWISE
         circle = Circle_2(Point_2(cx, cy), r);
-    else {
+        geo_type = GEO_CIRCLE;
+    } else {
         r = sqrt(pow(ax1 - cx, 2) + pow(ay1 - cy, 2));
         Circular_Circle_2 ccircle =
             Circular_Circle_2(Circular_Point_2(cx, cy), r);
@@ -139,6 +192,7 @@ void GeometryArc::add_feature(const std::string &s)
             arc = Circular_arc_2(
                 ccircle, Circular_Arc_Point_2(Circular_Point_2(ax1, ay1)),
                 Circular_Arc_Point_2(Circular_Point_2(ax2, ay2)));
+        geo_type = GEO_ARC;
     }
 }
 
@@ -150,8 +204,9 @@ Bbox_2 GeometryArc::get_bbox()
         return arc.bbox();
 }
 
-void GeometryArc::dilate(Point_2 center, double dis){
-    if (is_circle){
+void GeometryArc::dilate(Point_2 center, double dis)
+{
+    if (is_circle) {
         circle = Circle_2(circle.center(), circle.squared_radius() + dis);
     } else {
         Circular_Circle_2 ccircle =
@@ -160,22 +215,25 @@ void GeometryArc::dilate(Point_2 center, double dis){
         double dx = CGAL::to_double(arc.source().x() - arc.center().x());
         double dy = CGAL::to_double(arc.source().y() - arc.center().y());
         double dl = sqrt(pow(dx, 2) + pow(dy, 2));
-        Circular_Arc_Point_2 acp = Circular_Arc_Point_2(
-            Circular_Point_2(
-                CGAL::to_double(arc.source().x()) + dx * dis / dl,
-                CGAL::to_double(arc.source().y()) + dy * dis / dl) );
+        Circular_Arc_Point_2 acp = Circular_Arc_Point_2(Circular_Point_2(
+            CGAL::to_double(arc.source().x()) + dx * dis / dl,
+            CGAL::to_double(arc.source().y()) + dy * dis / dl));
 
         dx = CGAL::to_double(arc.target().x() - arc.center().x());
         dy = CGAL::to_double(arc.target().y() - arc.center().y());
         dl = sqrt(pow(dx, 2) + pow(dy, 2));
-        Circular_Arc_Point_2 acq = Circular_Arc_Point_2(
-            Circular_Point_2(
-                CGAL::to_double(arc.target().x()) + dx * dis / dl,
-                CGAL::to_double(arc.target().y()) + dy * dis / dl) );
-        
+        Circular_Arc_Point_2 acq = Circular_Arc_Point_2(Circular_Point_2(
+            CGAL::to_double(arc.target().x()) + dx * dis / dl,
+            CGAL::to_double(arc.target().y()) + dy * dis / dl));
+
         arc = Circular_arc_2(ccircle, acp, acq);
     }
 }
+
+void GeometryArc::check_collision(Geometry &g, std::vector<Point_2> &res) {}
+
+void GeometryArc::move(Vector_2 v) {}
+
 void GeometryArc::draw(cv::Mat img,
                        const DrawConfig &dc,
                        const cv::Scalar color,
@@ -213,7 +271,16 @@ void GeometryArc::draw(cv::Mat img,
 Node::Node(const std::string &_node_type,
            const std::vector<std::string> &_geos_str)
 {
-    node_type = _node_type;
+    is_collision = false;
+    if (_node_type.compare(0, 5, "drill") == 0)
+        node_type = DRILL;
+    else if (_node_type.compare(0, 3, "smd") == 0)
+        node_type = SMD;
+    else if (_node_type.compare(0, 3, "pth") == 0)
+        node_type = PTH;
+    else
+        node_type = UNKNOWN;
+
     bbox = CGAL::Bbox_2();
     for (auto geo : _geos_str) {
         int start = geo.find(',');
@@ -247,6 +314,14 @@ void Node::dilate(double dis)
         g->dilate(center, dis);
     }
 }
+
+void Node::move(Vector_2 v)
+{
+    for (auto it = geometries.begin(); it < geometries.end(); it++) {
+        // update position of all geometries
+    }
+}
+
 void Node::print_bbox()
 {
     std::cout << bbox.xmin() << ',' << bbox.ymin() << ',' << bbox.xmax() << ','
@@ -255,6 +330,7 @@ void Node::print_bbox()
 
 bool Node::check_collision(const Node &n)
 {
+    // collision check based on intersection of bounding boxes
     Iso_rectangle_2 rec0(Exact_Point_2(bbox.xmin(), bbox.ymin()),
                          Exact_Point_2(bbox.xmax(), bbox.ymax()));
     Iso_rectangle_2 rec1(Exact_Point_2(n.bbox.xmin(), n.bbox.ymin()),
@@ -266,6 +342,12 @@ bool Node::check_collision(const Node &n)
         const Iso_rectangle_2 *s = boost::get<Iso_rectangle_2>(&*result);
         return true;
     }
+
+    // geometries recursive check
+    for (auto gi : geometries) {
+        for (auto gj : n.geometries) {
+        }
+    }
     return false;
 }
 
@@ -273,7 +355,8 @@ void Node::draw(cv::Mat img, const DrawConfig &dc)
 {
     for (auto g : geometries) {
         cv::Scalar color;
-        if (node_type == "drill")
+        // if (node_type == "drill")
+        if (is_collision)
             color = cv::Scalar(0, 255, 0);
         else
             color = cv::Scalar(255, 0, 0);

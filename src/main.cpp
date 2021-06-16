@@ -11,7 +11,7 @@
 #include "geometry.h"
 #include "load.h"
 #include "visualization.h"
-using namespace std;
+//using namespace std;
 using namespace boost;
 
 typedef property<edge_weight_t, double> Weight;
@@ -20,7 +20,7 @@ typedef adjacency_list<vecS, vecS, undirectedS, no_property, Weight>
 
 int main()
 {
-    Load data = Load("../Testcase_txt/ProblemB.txt");
+    Load data = Load("../Testcase_txt/ProblemA.txt");
     for (auto node = data.nodes.begin(); node < data.nodes.end(); node++) {
         node->get_bbox();
         node->print_bbox();
@@ -37,8 +37,15 @@ int main()
 
     for (auto vi = data.nodes.begin(); vi < data.nodes.end(); vi++) {
         for (auto vj = vi + 1; vj < data.nodes.end(); vj++) {
+            if (vi->node_type == DRILL || vj->node_type == DRILL){
+                // collision with drill is not concern
+                continue;
+            }
+
             bool collision = vi->check_collision(*vj);
             if (collision) {
+                vi->is_collision = true;
+                vj->is_collision = true;
                 int i = vi - data.nodes.begin();
                 int j = vj - data.nodes.begin();
                 a = vertex(i, undigraph);
