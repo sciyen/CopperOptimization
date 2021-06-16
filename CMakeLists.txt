@@ -7,7 +7,7 @@ project( CopperOptimization VERSION 0.0)
 
 
 # CGAL and its components
-find_package( CGAL QUIET COMPONENTS Cores )
+find_package( CGAL QUIET COMPONENTS Core )
 
 if ( NOT CGAL_FOUND )
 
@@ -73,7 +73,7 @@ add_executable( CopperOptimization ./src/main.cpp)
 #add_to_cached_list( CGAL_EXECUTABLE_TARGETS CopperOptimization )
 
 # Link the executable to CGAL and third-party libraries
-target_link_libraries(CopperOptimization PRIVATE CGAL::CGAL )
+target_link_libraries(CopperOptimization PRIVATE CGAL::CGAL CGAL::CGAL_Core)
 target_link_libraries(CopperOptimization PUBLIC ${EXTRA_LIBS})
 
 #target_link_libraries(CopperOptimization ${Boost_LIBRARIES})

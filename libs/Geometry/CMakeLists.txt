@@ -46,7 +46,7 @@ include_directories( ${OpenCV_INCLUDE_DIRS} )
 
 # include for local package
 
-target_link_libraries(Geometry CGAL::CGAL)
+target_link_libraries(Geometry CGAL::CGAL CGAL::CGAL_Core)
 
 # Creating entries for all C++ files with "main" routine
 target_link_libraries( Geometry ${OpenCV_LIBS} )

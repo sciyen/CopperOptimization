@@ -96,36 +96,38 @@ void GeometryLine::check_collision(Geometry &g, std::vector<Point_2> &res)
             res.push_back(test_seg.target());
         }
     } else {
-        Line_2 l = Line_2(seg);
-        Circle_2 c;
+        CurveList curves;
+        curves.push_back(Arrangement_Curve_2(seg));
+        Arrangement_Curve_2 c;
         if (g.geo_type == GEO_CIRCLE) {
-            c = Circle_2(dynamic_cast<GeometryArc *>(&g)->circle);
+            c = Arrangement_Curve_2(dynamic_cast<GeometryArc *>(&g)->circle);
         } else if (g.geo_type == GEO_ARC) {
-            Circular_Circle_2 ccircle = dynamic_cast<GeometryArc *>(&g)->arc.supporting_circle();
-            c = Circle_2(
-                Point_2(ccircle.center().x(), ccircle.center().y()), 
-                CGAL::to_double(ccircle.squared_radius()));
+            Circular_arc_2 arc = dynamic_cast<GeometryArc *>(&g)->arc;
+            c = Arrangement_Curve_2(
+                    Circle_2(Point_2(CGAL::to_double(arc.center().x()), 
+                                     CGAL::to_double(arc.center().y())), 
+                    CGAL::to_double(arc.squared_radius())),
+                Arrangement_Point_2(CGAL::to_double(arc.source().x()), CGAL::to_double(arc.source().y())),
+                Arrangement_Point_2(CGAL::to_double(arc.target().x()), CGAL::to_double(arc.target().y())));
+
+            /*c = Arrangement_Curve_2(
+                Circle_2(Point_2(0, 0), 5.0),
+                Arrangement_Point_2(5.0, 0),
+                Arrangement_Point_2(-5.0, 0));*/
         }
+        curves.push_back(c);
+        // Compute all intersection points.
 
-
-        typedef CGAL::cpp11::result_of<Kernel::Intersect_2(Line_2, Circle_2)>::type
-            IntersectOut;
-        std::vector<IntersectOut> output;
-        typedef CGAL::Dispatch_output_iterator < CGAL::cpp11::tuple<IntersectOut>, CGAL::cpp0x::tuple<std::back_insert_iterator<std::vector<IntersectOut>>>> Dispatcher;
-
-        Dispatcher disp = CGAL::dispatch_output<IntersectOut>(std::back_inserter(output));
-        CGAL::intersection(l, c, disp);
-
-        if (output.size() > 0)
-        {
-            std::cout << CGAL::to_double(output[0].first.x()) << ", " << CGAL::to_double(output[0].first.y()) << std::endl;
-            std::cout << output[0].second << std::endl;
-            if (output.size() > 1)
-            {
-                std::cout << CGAL::to_double(output[1].first.x()) << ", " << CGAL::to_double(output[1].first.y()) << std::endl;
-            }
-        }
+        std::list<Arrangement_Point_2> pts;
+        CGAL::compute_intersection_points(curves.begin(), 
+                                    curves.end(),
+                                    std::back_inserter(pts),
+                                    false);
     }
+}
+
+Arrangement_Curve_2 GeometryLine::gen_curve(){
+    return Arrangement_Curve_2(seg);
 }
 
 void GeometryLine::move(Vector_2 v) {}
@@ -179,7 +181,7 @@ void GeometryArc::add_feature(const std::string &s)
         circle = Circle_2(Point_2(cx, cy), r);
         geo_type = GEO_CIRCLE;
     } else {
-        r = sqrt(pow(ax1 - cx, 2) + pow(ay1 - cy, 2));
+        r = pow(ax1 - cx, 2) + pow(ay1 - cy, 2);
         Circular_Circle_2 ccircle =
             Circular_Circle_2(Circular_Point_2(cx, cy), r);
         // DOTO: orientation
@@ -231,6 +233,29 @@ void GeometryArc::dilate(Point_2 center, double dis)
 }
 
 void GeometryArc::check_collision(Geometry &g, std::vector<Point_2> &res) {}
+
+Arrangement_Curve_2 GeometryArc::gen_curve(){
+    if (is_circle)
+        return Arrangement_Curve_2(circle);
+    else{
+        std::cout << "Constructing arc: " <<std::endl;
+        std::cout << CGAL::to_double(arc.center().x()) << ',' << CGAL::to_double(arc.center().y()) << ',' << CGAL::to_double(arc.squared_radius()) << std::endl;
+        std::cout << CGAL::to_double(arc.source().x()) << ',' << CGAL::to_double(arc.source().y()) << std::endl;
+        std::cout << CGAL::to_double(arc.target().x()) << ',' << CGAL::to_double(arc.target().y()) << std::endl;
+        /*return Arrangement_Curve_2(
+                    Circle_2(Point_2(CGAL::to_double(arc.center().x()), 
+                                     CGAL::to_double(arc.center().y())), 
+                    CGAL::to_double(arc.squared_radius())),
+                Arrangement_Point_2(CGAL::to_double(arc.source().x()), CGAL::to_double(arc.source().y())),
+                Arrangement_Point_2(CGAL::to_double(arc.target().x()), CGAL::to_double(arc.target().y())));*/
+        return Arrangement_Curve_2(
+                    Circle_2(Point_2(arc.center().x(), 
+                                     arc.center().y()), 
+                        arc.squared_radius()),
+                Arrangement_Point_2(arc.source().x(), arc.source().y()),
+                Arrangement_Point_2(arc.target().x(), arc.target().y()));
+    }
+}
 
 void GeometryArc::move(Vector_2 v) {}
 
@@ -331,6 +356,7 @@ void Node::print_bbox()
 bool Node::check_collision(const Node &n)
 {
     // collision check based on intersection of bounding boxes
+    /*
     Iso_rectangle_2 rec0(Exact_Point_2(bbox.xmin(), bbox.ymin()),
                          Exact_Point_2(bbox.xmax(), bbox.ymax()));
     Iso_rectangle_2 rec1(Exact_Point_2(n.bbox.xmin(), n.bbox.ymin()),
@@ -342,12 +368,24 @@ bool Node::check_collision(const Node &n)
         const Iso_rectangle_2 *s = boost::get<Iso_rectangle_2>(&*result);
         return true;
     }
-
+    */
     // geometries recursive check
-    for (auto gi : geometries) {
-        for (auto gj : n.geometries) {
-        }
-    }
+    
+    CurveList curves;
+    for (auto gi : geometries)
+        curves.push_back(gi->gen_curve());
+    for (auto gj : n.geometries) 
+        curves.push_back(gj->gen_curve());
+
+    // Compute all intersection points.
+
+    std::list<Arrangement_Point_2> pts;
+    CGAL::compute_intersection_points(curves.begin(), 
+                                curves.end(),
+                                std::back_inserter(pts),
+                                false);
+    if (pts.size() > 0)
+        return true;
     return false;
 }
 

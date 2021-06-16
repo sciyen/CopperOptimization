@@ -9,9 +9,11 @@
 
 #include <CGAL/Arrangement_2.h>
 #include <CGAL/Arr_circle_segment_traits_2.h>
+#include <CGAL/Surface_sweep_2_algorithms.h>
 
 #include <iostream>
 #include <string>
+#include <list>
 #include <vector>
 
 #include <cmath>
@@ -31,19 +33,18 @@ typedef Kernel::Vector_2 Vector_2;
 // Bring in the 2D arrangement traits
 typedef CGAL::Arr_circle_segment_traits_2<Kernel> Circle_Traits_2;
 // We need the circular entities from the 2D trait
-typedef Circle_Traits_2::Point_2 Circular_Point_2;
-typedef Circle_Traits_2::Curve_2 Circular_Curve_2;
-typedef Circle_Traits_2::Circle_2 Circular_Circle_2;
-typedef Circle_Traits_2::Line_2 Circular_Line_2;
-typedef Circle_Traits_2::Circular_arc_point_2 Circular_Arc_Point_2;
-typedef Circle_Traits_2::Circular_arc_2 Circular_Arc_2;
+typedef Circle_Traits_2::Point_2 Arrangement_Point_2;
+typedef Circle_Traits_2::Curve_2 Arrangement_Curve_2;
 
-/*typedef CGAL::Exact_circular_kernel_2 Circular_k;
+typedef std::list<Arrangement_Curve_2> CurveList;
+typedef CurveList::iterator CurveListIter;
+
+typedef CGAL::Exact_circular_kernel_2 Circular_k;
 typedef CGAL::Circle_2<Circular_k> Circular_Circle_2;
 typedef CGAL::Point_2<Circular_k> Circular_Point_2;
 typedef CGAL::Line_2<Circular_k> Circular_Line_2;
 typedef CGAL::Circular_arc_point_2<Circular_k> Circular_Arc_Point_2;
-typedef CGAL::Circular_arc_2<Circular_k> Circular_arc_2;*/
+typedef CGAL::Circular_arc_2<Circular_k> Circular_arc_2;
 
 // Bounding box
 typedef CGAL::Bbox_2 Bbox_2;
@@ -97,6 +98,7 @@ public:
     /* Expand the geometry with the given distance and center. */
     virtual void dilate(Point_2 center, double dis) = 0;
 
+    virtual Arrangement_Curve_2 gen_curve() = 0;
     virtual void check_collision(Geometry &g,
                                  std::vector<Point_2> &res) = 0;
 
@@ -122,6 +124,7 @@ public:
     virtual Bbox_2 get_bbox();
     virtual void dilate(Point_2 center, double dis);
     virtual void check_collision(Geometry &g, std::vector<Point_2> &res);
+    virtual Arrangement_Curve_2 gen_curve();
     virtual void move(Vector_2 v);
     virtual void draw(cv::Mat img,
                       const DrawConfig &dc,
@@ -145,6 +148,7 @@ public:
     virtual Bbox_2 get_bbox();
     virtual void dilate(Point_2 center, double dis);
     virtual void check_collision(Geometry &g, std::vector<Point_2> &res);
+    virtual Arrangement_Curve_2 gen_curve();
     virtual void move(Vector_2 v);
     virtual void draw(cv::Mat img,
                       const DrawConfig &dc,
