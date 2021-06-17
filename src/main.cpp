@@ -26,6 +26,15 @@ int main()
         node->print_bbox();
     }
 
+    
+    data.get_bbox();
+    Visualization fig = Visualization(data, "pad");
+    fig.show(data);
+
+    for (auto vi = data.nodes.begin(); vi < data.nodes.end(); vi++) {
+        vi->dilate(data.config.mingap / 2);
+    }
+
     /* Graph construction */
     UndirectedGraph undigraph(data.nodes.size());
 
@@ -42,7 +51,7 @@ int main()
                 continue;
             }
 
-            bool collision = vi->check_collision(*vj);
+            bool collision = vi->check_collision(*vj, fig.img, fig.config);
             if (collision) {
                 vi->is_collision = true;
                 vj->is_collision = true;
@@ -55,12 +64,7 @@ int main()
         }
     }
 
-    for (auto vi = data.nodes.begin(); vi < data.nodes.end(); vi++) {
-        vi->dilate(data.config.mingap / 2);
-    }
-
-    data.get_bbox();
-    Visualization fig = Visualization(data, "pad");
     fig.show(data);
+    fig.draw();
     return 0;
 }

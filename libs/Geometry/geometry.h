@@ -27,6 +27,7 @@ typedef Kernel::Line_2 Line_2;
 typedef Kernel::Segment_2 Segment_2;
 typedef Kernel::Circle_2 Circle_2;
 typedef Kernel::Vector_2 Vector_2;
+typedef Kernel::FT FT;
 
 // Circular Arc
 // http://cgal-discuss.949826.n4.nabble.com/Convert-points-and-circles-from-2D-linear-kernel-to-2D-circular-kernel-td4663254.html
@@ -90,6 +91,8 @@ protected:
 public:
     GeoType geo_type;
     CGAL::Bbox_2 bbox;
+    Arrangement_Curve_2 curve;
+
     Geometry();
     virtual void add_feature(const std::string &s) = 0;
 
@@ -183,7 +186,7 @@ public:
     void move(Vector_2 v);
 
     /* Check if a collision occurred with the given node. */
-    bool check_collision(const Node &n);
+    bool check_collision(const Node &n, cv::Mat img, const DrawConfig &dc);
 
     void draw(cv::Mat img, const DrawConfig &dc);
 };

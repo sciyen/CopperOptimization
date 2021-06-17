@@ -24,6 +24,9 @@ void Visualization::show(const Load &data)
         std::cout << "drawing " << node.node_type << std::endl;
         node.draw(img, this->config);
     }
+}
+
+void Visualization::draw(){
     cv::imshow(window_name, img);
     cv::waitKey(0);
 }

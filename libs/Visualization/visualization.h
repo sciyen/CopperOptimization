@@ -10,12 +10,12 @@
 class Visualization
 {
 private:
-    cv::Mat img;
     std::string window_name;
     double scale;
-    DrawConfig config;
 
 public:
+    cv::Mat img;
+    DrawConfig config;
     /* Initialize the window 
      * @Param:
      *      data: the loaded copper data
@@ -26,6 +26,8 @@ public:
 
     /* Draw each component and show */
     void show(const Load &data);
+
+    void draw();
 };
 
 #endif

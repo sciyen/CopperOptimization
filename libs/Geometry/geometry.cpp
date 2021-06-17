@@ -57,6 +57,7 @@ void GeometryLine::add_feature(const std::string &s)
 
     seg = Segment_2(Point_2(x1, y1), Point_2(x2, y2));
     geo_type = GEO_LINE;
+    curve = Arrangement_Curve_2(seg);
 }
 
 Bbox_2 GeometryLine::get_bbox()
@@ -77,6 +78,7 @@ void GeometryLine::dilate(Point_2 center, double dis)
     v = v * dis / len;
     Transformation translate(CGAL::TRANSLATION, v);
     seg = Segment_2(translate(seg.source()), translate(seg.target()));
+    curve = Arrangement_Curve_2(seg);
 }
 
 void GeometryLine::check_collision(Geometry &g, std::vector<Point_2> &res)
@@ -127,6 +129,7 @@ void GeometryLine::check_collision(Geometry &g, std::vector<Point_2> &res)
 }
 
 Arrangement_Curve_2 GeometryLine::gen_curve(){
+    return curve;
     return Arrangement_Curve_2(seg);
 }
 
@@ -166,11 +169,11 @@ void GeometryArc::add_feature(const std::string &s)
     cy = buf[5];
     if (num == 7) {
         is_circle = true;
-        r = buf[6];
+        r = pow(buf[6], 2);
         offset = 1;
     } else if ((ax1 == ax2) && (ay1 == ay2)) {
         is_circle = true;
-        r = sqrt(pow(ax1 - cx, 2) + pow(ay1 - cy, 2));
+        r = (pow(ax1 - cx, 2) + pow(ay1 - cy, 2));
     }
     dir = (buf[offset + 6] > 0) ? true : false;
     std::cout << "Arc: " << ax1 << ',' << ay1 << ',' << ax2 << ',' << ay2 << ','
@@ -178,12 +181,13 @@ void GeometryArc::add_feature(const std::string &s)
 
     if (is_circle) {
         // center, radius, orientation=COUNTERCLOCKWISE
-        circle = Circle_2(Point_2(cx, cy), r);
+        circle = Circle_2(Point_2(cx, cy), FT(r));
         geo_type = GEO_CIRCLE;
+        curve = Arrangement_Curve_2(circle);
     } else {
-        r = pow(ax1 - cx, 2) + pow(ay1 - cy, 2);
+        r = CGAL::square(ax1 - cx) + CGAL::square(ay1 - cy);
         Circular_Circle_2 ccircle =
-            Circular_Circle_2(Circular_Point_2(cx, cy), r);
+            Circular_Circle_2(Circular_Point_2(cx, cy), Circular_k::FT(r));
         // DOTO: orientation
         // center, arc_point, arc_point
         if (dir)
@@ -195,6 +199,35 @@ void GeometryArc::add_feature(const std::string &s)
                 ccircle, Circular_Arc_Point_2(Circular_Point_2(ax1, ay1)),
                 Circular_Arc_Point_2(Circular_Point_2(ax2, ay2)));
         geo_type = GEO_ARC;
+        std::cout << cx << ',' << cy << ',' << r << std::endl;
+        std::cout << ax1 << ',' << ay1 << std::endl;
+        std::cout << ax2 << ',' << ay2 << std::endl;
+        circle = Circle_2(Point_2(cx, cy), FT(r));
+        curve = Arrangement_Curve_2(circle);
+        /*if (dir){
+            Arrangement_Point_2 p1 = Arrangement_Point_2(FT(ax1), FT(ay1));
+            Arrangement_Point_2 p2 = Arrangement_Point_2(FT(ax2), FT(ay2));
+            auto p3 = Point_2(ax1, ay1) - Point_2(cx, cy);
+            auto rr = sqrt(CGAL::to_double(CGAL::square(p3.x()) + CGAL::square(p3.y())));
+            Circle_2 c = Circle_2(Point_2(cx, cy), rr);
+            std::cout << CGAL::to_double(c.center().x()) << ',' << CGAL::to_double(c.center().y()) << ',';
+            std::cout << CGAL::to_double(c.squared_radius()) << std::endl;
+            std::cout << CGAL::to_double(p1.x()) << ',' << CGAL::to_double(p1.y()) << std::endl;
+            std::cout << CGAL::to_double(p2.x()) << ',' << CGAL::to_double(p2.y()) << std::endl;
+            curve = Arrangement_Curve_2(
+                Point_2(cx, cy),
+                rr, 
+                CGAL::CLOCKWISE,
+                p1,
+                p2
+            );
+        }*/
+        /*else
+            curve = Arrangement_Curve_2(
+                Circle_2(Point_2(cx, cy), r),
+                Arrangement_Point_2(ax1, ay1),
+                Arrangement_Point_2(ax2, ay2)
+            );*/
     }
 }
 
@@ -209,10 +242,13 @@ Bbox_2 GeometryArc::get_bbox()
 void GeometryArc::dilate(Point_2 center, double dis)
 {
     if (is_circle) {
-        circle = Circle_2(circle.center(), circle.squared_radius() + dis);
+        auto R = circle.squared_radius();
+        circle = Circle_2(circle.center(), R + CGAL::square(dis) + 2 * sqrt(CGAL::to_double(R)) * dis);
+        curve = Arrangement_Curve_2(circle);
     } else {
+        auto R = arc.squared_radius();
         Circular_Circle_2 ccircle =
-            Circular_Circle_2(arc.center(), arc.squared_radius() + dis);
+            Circular_Circle_2(arc.center(), R + CGAL::square(dis) + 2 * sqrt(CGAL::to_double(R)) * dis);
 
         double dx = CGAL::to_double(arc.source().x() - arc.center().x());
         double dy = CGAL::to_double(arc.source().y() - arc.center().y());
@@ -229,12 +265,20 @@ void GeometryArc::dilate(Point_2 center, double dis)
             CGAL::to_double(arc.target().y()) + dy * dis / dl));
 
         arc = Circular_arc_2(ccircle, acp, acq);
+
+        circle = Circle_2(
+            Point_2(
+                CGAL::to_double(arc.center().x()), 
+                CGAL::to_double(arc.center().y())), 
+            CGAL::to_double(R) + CGAL::square(dis) + 2 * sqrt(CGAL::to_double(R)) * dis);
+        curve = Arrangement_Curve_2(circle);
     }
 }
 
 void GeometryArc::check_collision(Geometry &g, std::vector<Point_2> &res) {}
 
 Arrangement_Curve_2 GeometryArc::gen_curve(){
+    return curve;
     if (is_circle)
         return Arrangement_Curve_2(circle);
     else{
@@ -242,18 +286,12 @@ Arrangement_Curve_2 GeometryArc::gen_curve(){
         std::cout << CGAL::to_double(arc.center().x()) << ',' << CGAL::to_double(arc.center().y()) << ',' << CGAL::to_double(arc.squared_radius()) << std::endl;
         std::cout << CGAL::to_double(arc.source().x()) << ',' << CGAL::to_double(arc.source().y()) << std::endl;
         std::cout << CGAL::to_double(arc.target().x()) << ',' << CGAL::to_double(arc.target().y()) << std::endl;
-        /*return Arrangement_Curve_2(
+        return Arrangement_Curve_2(
                     Circle_2(Point_2(CGAL::to_double(arc.center().x()), 
                                      CGAL::to_double(arc.center().y())), 
                     CGAL::to_double(arc.squared_radius())),
                 Arrangement_Point_2(CGAL::to_double(arc.source().x()), CGAL::to_double(arc.source().y())),
-                Arrangement_Point_2(CGAL::to_double(arc.target().x()), CGAL::to_double(arc.target().y())));*/
-        return Arrangement_Curve_2(
-                    Circle_2(Point_2(arc.center().x(), 
-                                     arc.center().y()), 
-                        arc.squared_radius()),
-                Arrangement_Point_2(arc.source().x(), arc.source().y()),
-                Arrangement_Point_2(arc.target().x(), arc.target().y()));
+                Arrangement_Point_2(CGAL::to_double(arc.target().x()), CGAL::to_double(arc.target().y())));
     }
 }
 
@@ -269,7 +307,7 @@ void GeometryArc::draw(cv::Mat img,
 
     if (is_circle) {
         this->translate(cx, cy, circle.center(), dc);
-        double r = (CGAL::to_double(circle.squared_radius())) * dc.scale;
+        double r = sqrt(CGAL::to_double(circle.squared_radius())) * dc.scale;
         cv::circle(img, cv::Point(cx, cy), r, color, thickness, lineType);
     } else {
         double cx = CGAL::to_double(arc.center().x());
@@ -285,7 +323,7 @@ void GeometryArc::draw(cv::Mat img,
             end_angle += 360;
         Point_2 center = Point_2(cx, cy);
 
-        double r = (CGAL::to_double(arc.squared_radius())) * dc.scale;
+        double r = sqrt(CGAL::to_double(arc.squared_radius())) * dc.scale;
 
         this->translate(cx, cy, center, dc);
         cv::ellipse(img, cv::Point(cx, cy), cv::Size(r, r), 0, start_angle,
@@ -353,7 +391,7 @@ void Node::print_bbox()
               << bbox.ymax() << std::endl;
 }
 
-bool Node::check_collision(const Node &n)
+bool Node::check_collision(const Node &n, cv::Mat img, const DrawConfig &dc)
 {
     // collision check based on intersection of bounding boxes
     /*
@@ -384,9 +422,21 @@ bool Node::check_collision(const Node &n)
                                 curves.end(),
                                 std::back_inserter(pts),
                                 false);
-    if (pts.size() > 0)
+
+    if (pts.size() > 0){
+        std::cout << "Found " << pts.size() << std::endl;
+        for (auto p : pts){
+            std::cout << "Collide " << CGAL::to_double(p.x()) << ',' <<CGAL::to_double(p.y()) <<std::endl;
+            double ox = (CGAL::to_double(p.x()) - dc.s_xmin) * dc.t_w / dc.s_w;
+            double oy = (CGAL::to_double(p.y()) - dc.s_ymin) * dc.t_h / dc.s_h;
+            cv::circle(img, cv::Point(ox, oy), 5, cv::Scalar(0, 0, 255), 2);
+        }
         return true;
-    return false;
+    }
+    else {
+        std::cout << "Not found" <<std::endl;
+        return false;
+    }
 }
 
 void Node::draw(cv::Mat img, const DrawConfig &dc)
