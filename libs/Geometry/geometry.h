@@ -7,20 +7,21 @@
 #include <CGAL/Simple_cartesian.h>
 #include <CGAL/intersections.h>
 
-#include <CGAL/Arrangement_2.h>
 #include <CGAL/Arr_circle_segment_traits_2.h>
+#include <CGAL/Arrangement_2.h>
 #include <CGAL/Surface_sweep_2_algorithms.h>
 
+#include <algorithm>
 #include <iostream>
-#include <string>
 #include <list>
+#include <string>
 #include <vector>
 
 #include <cmath>
 #include <opencv2/opencv.hpp>
 
 // Line
-//typedef CGAL::Simple_cartesian<double> Kernel;
+// typedef CGAL::Simple_cartesian<double> Kernel;
 typedef CGAL::Exact_predicates_exact_constructions_kernel Kernel;
 typedef Kernel::Point_2 Point_2;
 typedef Kernel::Line_2 Line_2;
@@ -102,8 +103,7 @@ public:
     virtual void dilate(Point_2 center, double dis) = 0;
 
     virtual Arrangement_Curve_2 gen_curve() = 0;
-    virtual void check_collision(Geometry &g,
-                                 std::vector<Point_2> &res) = 0;
+    virtual void check_collision(Geometry &g, std::vector<Point_2> &res) = 0;
 
     virtual void move(Vector_2 v) = 0;
 
@@ -166,11 +166,15 @@ private:
 public:
     bool is_collision;
     CGAL::Bbox_2 bbox;
+    Point_2 origin;
     Point_2 center;
     // std::string node_type;
     NodeType node_type;
 
     std::vector<std::shared_ptr<Geometry>> geometries;
+    std::vector<int> collision_nbr;
+
+    Vector_2 force;
 
     /* Constructor for Node
      * @Params:
@@ -183,7 +187,7 @@ public:
     Bbox_2 get_bbox();
     void dilate(double dis);
     void print_bbox();
-    void move(Vector_2 v);
+    void move(const Vector_2 &v);
 
     /* Check if a collision occurred with the given node. */
     bool check_collision(const Node &n, cv::Mat img, const DrawConfig &dc);
